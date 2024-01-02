@@ -27,7 +27,7 @@ package org.springframework.core.env;
  * <li>{@linkplain AbstractEnvironment#getSystemProperties() system properties}
  * <li>{@linkplain AbstractEnvironment#getSystemEnvironment() system environment variables}
  * </ul>
- *
+ * <p>
  * That is, if the key "xyz" is present both in the JVM system properties as well as in
  * the set of environment variables for the current process, the value of key "xyz" from
  * system properties will return from a call to {@code environment.getProperty("xyz")}.
@@ -47,17 +47,23 @@ package org.springframework.core.env;
  *
  * @author Chris Beams
  * @author Phillip Webb
- * @since 3.1
  * @see ConfigurableEnvironment
  * @see SystemEnvironmentPropertySource
  * @see org.springframework.web.context.support.StandardServletEnvironment
+ * @since 3.1
  */
 public class StandardEnvironment extends AbstractEnvironment {
 
-	/** System environment property source name: {@value}. */
+	/**
+	 * 系统环境属性源名称
+	 * 内部的属性键值对通过System.getenv()方法来获取
+	 */
 	public static final String SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME = "systemEnvironment";
 
-	/** JVM system properties property source name: {@value}. */
+	/**
+	 * JVM系统属性
+	 * 内部的属性键值对通过System.getProperties()方法获取
+	 */
 	public static final String SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME = "systemProperties";
 
 
@@ -71,6 +77,7 @@ public class StandardEnvironment extends AbstractEnvironment {
 	/**
 	 * Create a new {@code StandardEnvironment} instance with a specific
 	 * {@link MutablePropertySources} instance.
+	 *
 	 * @param propertySources property sources to use
 	 * @since 5.3.4
 	 */
@@ -88,12 +95,14 @@ public class StandardEnvironment extends AbstractEnvironment {
 	 * </ul>
 	 * <p>Properties present in {@value #SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME} will
 	 * take precedence over those in {@value #SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME}.
+	 *
 	 * @see AbstractEnvironment#customizePropertySources(MutablePropertySources)
 	 * @see #getSystemProperties()
 	 * @see #getSystemEnvironment()
 	 */
 	@Override
 	protected void customizePropertySources(MutablePropertySources propertySources) {
+		// 先加载systemProperties，后加载systemEnvironment，因此spring 容器在遍历查找环境属性配置时会优先从System Properties中查找
 		propertySources.addLast(
 				new PropertiesPropertySource(SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME, getSystemProperties()));
 		propertySources.addLast(

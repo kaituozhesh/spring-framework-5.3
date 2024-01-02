@@ -31,10 +31,10 @@ import org.springframework.util.StringUtils;
  * {@link org.springframework.web.context.support.XmlWebApplicationContext}.
  *
  * @author Juergen Hoeller
- * @since 2.5.2
  * @see #setConfigLocation
  * @see #setConfigLocations
  * @see #getDefaultConfigLocations
+ * @since 2.5.2
  */
 public abstract class AbstractRefreshableConfigApplicationContext extends AbstractRefreshableApplicationContext
 		implements BeanNameAware, InitializingBean {
@@ -53,6 +53,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 
 	/**
 	 * Create a new AbstractRefreshableConfigApplicationContext with the given parent context.
+	 *
 	 * @param parent the parent context
 	 */
 	public AbstractRefreshableConfigApplicationContext(@Nullable ApplicationContext parent) {
@@ -75,13 +76,15 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 */
 	public void setConfigLocations(@Nullable String... locations) {
 		if (locations != null) {
+			// Assert是Spring框架提供的的一个工具类，用于各种参数格式校验，这里是校验数组元素不能为null
 			Assert.noNullElements(locations, "Config locations must not be null");
+			// 初始化configLocations数组，长度为传入参数数组的length
 			this.configLocations = new String[locations.length];
 			for (int i = 0; i < locations.length; i++) {
+				// 取出每一个配置路径字符串，并尝试替换字符串中的环境变量占位符，然后将结果设置到configLocations数组的对应位置中
 				this.configLocations[i] = resolvePath(locations[i]).trim();
 			}
-		}
-		else {
+		} else {
 			this.configLocations = null;
 		}
 	}
@@ -92,6 +95,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 * patterns, which will get resolved via a ResourcePatternResolver.
 	 * <p>The default implementation returns {@code null}. Subclasses can override
 	 * this to provide a set of resource locations to load bean definitions from.
+	 *
 	 * @return an array of resource locations, or {@code null} if none
 	 * @see #getResources
 	 * @see #getResourcePatternResolver
@@ -106,6 +110,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 * explicit config locations have been specified.
 	 * <p>The default implementation returns {@code null},
 	 * requiring explicit config locations.
+	 *
 	 * @return an array of default config locations, if any
 	 * @see #setConfigLocations
 	 */
@@ -115,13 +120,15 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	}
 
 	/**
-	 * Resolve the given path, replacing placeholders with corresponding
-	 * environment property values if necessary. Applied to config locations.
-	 * @param path the original file path
-	 * @return the resolved file path
+	 * 解析给定的路径，必要时用相应的环境属性值替换占位符
+	 *
+	 * @param path 传递的文件路径
+	 * @return 解析后的文件路径
 	 * @see org.springframework.core.env.Environment#resolveRequiredPlaceholders(String)
 	 */
 	protected String resolvePath(String path) {
+		// 1. getEnvironment方法获取（没有就创建）当前上下文的可配置环境变量对象（StandardEnvironment类型）
+		// 2. 随后resolveRequiredPlaceholders方法替换字符串path中的${}占位符
 		return getEnvironment().resolveRequiredPlaceholders(path);
 	}
 

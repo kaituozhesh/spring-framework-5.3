@@ -76,18 +76,25 @@ public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
 
 	@Nullable
 	protected <T> T getProperty(String key, Class<T> targetValueType, boolean resolveNestedPlaceholders) {
+		// 如果属性源不为null，在调用getEnvironment方法获取环境对象的时候propertySources就被初始化了，肯定是不为null的
+		// 并且还通过customizePropertySources方法被设置了系统(systemEnvironment)和JVM(systemProperties)属性源
 		if (this.propertySources != null) {
 			for (PropertySource<?> propertySource : this.propertySources) {
 				if (logger.isTraceEnabled()) {
 					logger.trace("Searching for key '" + key + "' in PropertySource '" +
 							propertySource.getName() + "'");
 				}
+				// 获取属性源中key对应的value
 				Object value = propertySource.getProperty(key);
+				// 选用第一个不为null的匹配key的属性值
 				if (value != null) {
+					// 如果需要递归解析value中的嵌套占位符比如${}，并且value属于String类型
 					if (resolveNestedPlaceholders && value instanceof String) {
+						// 递归解析
 						value = resolveNestedPlaceholders((String) value);
 					}
 					logKeyFound(key, propertySource, value);
+					// 调用父类AbstractPropertyResolver中的方法：如有必要，将给定值转换为指定的目标类型并返回
 					return convertValueIfNecessary(value, targetValueType);
 				}
 			}
