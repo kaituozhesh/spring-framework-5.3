@@ -191,6 +191,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	/**
+	 * 创建上下文唯一标识
 	 * Unique id for this context, if any.
 	 */
 	private String id = ObjectUtils.identityToString(this);
@@ -278,12 +279,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	/**
 	 * Local listeners registered before refresh.
+	 * 刷新容器前注册的本地监听器集合
 	 */
 	@Nullable
 	private Set<ApplicationListener<?>> earlyApplicationListeners;
 
 	/**
 	 * ApplicationEvents published before the multicaster setup.
+	 * 早期发布事件集合
 	 */
 	@Nullable
 	private Set<ApplicationEvent> earlyApplicationEvents;
@@ -606,7 +609,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		synchronized (this.startupShutdownMonitor) {
 			StartupStep contextRefresh = this.applicationStartup.start("spring.context.refresh");
 
-			// Prepare this context for refreshing.
+			// 1. 初始化/刷新容器前的准备工作，设置Spring容器的启动时间和活动标识以及验证必须的属性，等工作
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
@@ -670,9 +673,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * Prepare this context for refreshing, setting its startup date and
 	 * active flag as well as performing any initialization of property sources.
+	 * 为刷新做准备，设置它的启动日期和活动标志，以继执行属性源的任何初始化
 	 */
 	protected void prepareRefresh() {
-		// Switch to active.
+		// 记录启动时间，切换到活跃状态
 		this.startupDate = System.currentTimeMillis();
 		this.closed.set(false);
 		this.active.set(true);
@@ -685,24 +689,33 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			}
 		}
 
-		// Initialize any placeholder property sources in the context environment.
+		/*
+		 * 在上下文环境中初始化任何其他属性源，默认空方法，这是留给子类的实现的扩展点
+		 * 非web容器什么也不做，web容器就会重写该方法
+		 */
 		initPropertySources();
 
-		// Validate that all properties marked as required are resolvable:
+		/*
+		 * 验证所有标记为required的属性值环境变量中是否可解析（是否存在/不为null）
+		 * 如果对应的value为null，那么抛出MissingRequiredPropertiesException异常
+		 */
 		// see ConfigurablePropertyResolver#setRequiredProperties
 		getEnvironment().validateRequiredProperties();
 
 		// Store pre-refresh ApplicationListeners...
+		// 存储早期的应用监听器列表（此前已经初始化的监听器）
 		if (this.earlyApplicationListeners == null) {
 			this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
 		} else {
 			// Reset local application listeners to pre-refresh state.
+			// 将本地应用程序监听器重置为刷新前状态
 			this.applicationListeners.clear();
 			this.applicationListeners.addAll(this.earlyApplicationListeners);
 		}
 
 		// Allow for the collection of early ApplicationEvents,
 		// to be published once the multicaster is available...
+		// 初始化早期事件集合
 		this.earlyApplicationEvents = new LinkedHashSet<>();
 	}
 
