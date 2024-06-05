@@ -4,6 +4,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.testing.aop.AopTestServiceImpl;
 import org.springframework.testing.bean.MyBean;
+import org.springframework.testing.tag.User;
 
 /**
  * @Description:
@@ -14,8 +15,17 @@ import org.springframework.testing.bean.MyBean;
  */
 public class ClassPathTest {
 	public static void main(String[] args) {
-		iocTest();
+//		iocTest();
 //		aopTest();
+		tagTest();
+	}
+
+	private static void tagTest() {
+		ApplicationContext ap = new ClassPathXmlApplicationContext("applicationContext.xml");
+		// 从容器中获取 bean
+		User dzg = (User) ap.getBean("dzg");
+
+		System.out.println(dzg.getEmail());
 	}
 
 	public static void iocTest() {
@@ -31,7 +41,7 @@ public class ClassPathTest {
 		// 从容器中获取 bean
 		Object aopTestService = ap.getBean("aopTestService");
 		if (aopTestService instanceof AopTestServiceImpl) {
-			((AopTestServiceImpl)aopTestService).test();
+			((AopTestServiceImpl) aopTestService).test();
 		}
 	}
 }

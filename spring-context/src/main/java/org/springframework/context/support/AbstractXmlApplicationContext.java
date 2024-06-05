@@ -134,6 +134,7 @@ public abstract class AbstractXmlApplicationContext extends AbstractRefreshableC
 		}
 		String[] configLocations = getConfigLocations();
 		if (configLocations != null) {
+			// 内部会从资源路径字符串处加载资源成为Resource，从还是会调用上面的loadBeanDefinitions方法
 			reader.loadBeanDefinitions(configLocations);
 		}
 	}

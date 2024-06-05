@@ -1326,6 +1326,7 @@ public class BeanDefinitionParserDelegate {
 	}
 
 	/**
+	 * 解析自定义标签元素（在默认命名空间之外的标签）
 	 * Parse a custom element (outside the default namespace).
 	 *
 	 * @param ele          the element to parse
@@ -1334,15 +1335,20 @@ public class BeanDefinitionParserDelegate {
 	 */
 	@Nullable
 	public BeanDefinition parseCustomElement(Element ele, @Nullable BeanDefinition containingBd) {
+		// 获取节点的命名空间URI
+		// <context: >节点的命名空间URI为 http://www.springframework.org/schema/context
+		// <aop: > <tx: >节点的命名空间URI为 http://www.springframework.org/schema/aop
 		String namespaceUri = getNamespaceURI(ele);
 		if (namespaceUri == null) {
 			return null;
 		}
+		// 根据namespaceUri获取对应的handler对象
 		NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
 		if (handler == null) {
 			error("Unable to locate Spring NamespaceHandler for XML schema namespace [" + namespaceUri + "]", ele);
 			return null;
 		}
+		// 使用handler的parse方法解析节点元素，传递一个新建的解析上下文ParserContext对象
 		return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
 	}
 

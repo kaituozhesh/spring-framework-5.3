@@ -322,9 +322,10 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 		if (logger.isTraceEnabled()) {
 			logger.trace("Loading XML bean definitions from " + encodedResource);
 		}
-
+		// 通过ThreadLocal获取当前线程的配置文件资源set集合
 		Set<EncodedResource> currentResources = this.resourcesCurrentlyBeingLoaded.get();
 
+		// 添加失败抛出异常，表明循环加载了
 		if (!currentResources.add(encodedResource)) {
 			throw new BeanDefinitionStoreException(
 					"Detected cyclic loading of " + encodedResource + " - check your import definitions!");
@@ -335,6 +336,9 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 			if (encodedResource.getEncoding() != null) {
 				inputSource.setEncoding(encodedResource.getEncoding());
 			}
+			/*
+			 * 核心方法，加载bean 定义，返回找到的bean 定义的数量
+			 */
 			return doLoadBeanDefinitions(inputSource, encodedResource.getResource());
 		}
 		catch (IOException ex) {
@@ -342,6 +346,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 					"IOException parsing XML document from " + encodedResource.getResource(), ex);
 		}
 		finally {
+			// 移除已被加载的resource
 			currentResources.remove(encodedResource);
 			if (currentResources.isEmpty()) {
 				this.resourcesCurrentlyBeingLoaded.remove();
@@ -387,7 +392,13 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 			throws BeanDefinitionStoreException {
 
 		try {
+			/*
+			 * 1. 使用sax解析，使用DocumentLoader和entityResolver继续解析resource资源，使其成为一个Docuemnt文档对象。一个Document对应一个XML
+			 */
 			Document doc = doLoadDocument(inputSource, resource);
+			/*
+			 * 2. 继续解析doc文档，将里面的bean定义解析出来并注册到容器中，返回找到的bean定义数量
+			 */
 			int count = registerBeanDefinitions(doc, resource);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Loaded " + count + " bean definitions from " + resource);
@@ -506,9 +517,16 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see BeanDefinitionDocumentReader#registerBeanDefinitions
 	 */
 	public int registerBeanDefinitions(Document doc, Resource resource) throws BeanDefinitionStoreException {
+		/*
+		 * 创建bean定义文档分析器，专门用于分析DOM文档中的bean定义
+		 */
 		BeanDefinitionDocumentReader documentReader = createBeanDefinitionDocumentReader();
+		// getRegistry()获取bean定义的注册器（实际上就是上下文内部的beanFactory工厂实例）
+		// 随后调用getBeanDefinitionCount方法返回目前注册表中已定义的bean数量
 		int countBefore = getRegistry().getBeanDefinitionCount();
+		// 核心方法：使用documentReader解析doc文档对象，然后将解析到的BeanDefinition注册到容器中
 		documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
+		// 获取最新的注册表中已定义的bean数量，减去最开始获取的数量countBefore，即得到本次解析找到的bean定义数量
 		return getRegistry().getBeanDefinitionCount() - countBefore;
 	}
 

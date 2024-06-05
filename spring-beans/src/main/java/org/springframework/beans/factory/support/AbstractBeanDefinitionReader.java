@@ -219,16 +219,28 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 	 * @see #loadBeanDefinitions(org.springframework.core.io.Resource[])
 	 */
 	public int loadBeanDefinitions(String location, @Nullable Set<Resource> actualResources) throws BeanDefinitionStoreException {
+		/*
+		 * 1. 获取resourceLoader，用来加载资源，实际上就是当前ClassPathXmlApplicationContext容器实例，支持路径字符串匹配
+		 * 如果是web应用，则是XmlWebApplicationContext，如果是boot项目，则可能根本就不会走这个方法
+		 */
 		ResourceLoader resourceLoader = getResourceLoader();
 		if (resourceLoader == null) {
 			throw new BeanDefinitionStoreException(
 					"Cannot load bean definitions from location [" + location + "]: no ResourceLoader available");
 		}
-
+		// 如果支持资源Ant模式匹配，走这一条分支
 		if (resourceLoader instanceof ResourcePatternResolver) {
 			// Resource pattern matching available.
 			try {
+				/*
+				 * 2 调用resourceLoader的方法，将给定的路径的XML文件资源解析为Resource资源对象数组
+				 * 通常一个路径对应一个XML文件，则resources数组只有一个Resource元素
+				 * 但是如果路径有模式匹配，匹配到多个资源文件，则resources数组可能有多个Resource元素
+				 */
 				Resource[] resources = ((ResourcePatternResolver) resourceLoader).getResources(location);
+				/*
+				 * 3 调用AbstractBeanDefinitionReader的另一个loadBeanDefinitions方法，解析Resource资源数组，返回解析到的beanDefinition数量
+				 */
 				int count = loadBeanDefinitions(resources);
 				if (actualResources != null) {
 					Collections.addAll(actualResources, resources);
