@@ -119,11 +119,14 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		Assert.notNull(beanName, "Bean name must not be null");
 		Assert.notNull(singletonObject, "Singleton object must not be null");
 		synchronized (this.singletonObjects) {
+			// 从缓存中获取尝试获取该名字单例bean实例
 			Object oldObject = this.singletonObjects.get(beanName);
+			// 如果不为null，说明重复注册，抛出异常
 			if (oldObject != null) {
 				throw new IllegalStateException("Could not register object [" + singletonObject +
 						"] under bean name '" + beanName + "': there is already object [" + oldObject + "] bound");
 			}
+			// 注册
 			addSingleton(beanName, singletonObject);
 		}
 	}
@@ -136,9 +139,13 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	protected void addSingleton(String beanName, Object singletonObject) {
 		synchronized (this.singletonObjects) {
+			// 注册到singletonObjects缓存
 			this.singletonObjects.put(beanName, singletonObject);
+			// 上面的缓存中注册了，那么其他单例缓存中就不应该出现
+			// singletonFactories和earlySingletonObjects移除
 			this.singletonFactories.remove(beanName);
 			this.earlySingletonObjects.remove(beanName);
+			// 注册到beanName缓存
 			this.registeredSingletons.add(beanName);
 		}
 	}

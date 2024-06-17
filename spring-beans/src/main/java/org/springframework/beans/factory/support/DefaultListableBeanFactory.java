@@ -1146,8 +1146,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 	@Override
 	public void registerSingleton(String beanName, Object singletonObject) throws IllegalStateException {
+		// 调用父类的方法DefaultSingletonBeanRegistry注册到父类的相应的bean实例缓存中
 		super.registerSingleton(beanName, singletonObject);
+		// 更新DefaultListableBeanFactory工厂内部的手动注册的单例bean的名字缓存manualSingletonNames
+		// 如果不包含给定beanName，那么添加beanName
 		updateManualSingletonNames(set -> set.add(beanName), set -> !this.beanDefinitionMap.containsKey(beanName));
+		// 删除有关按类型映射的任何缓存，即清空allBeanNamesByType和singletonBeanNamesByType属性集合
 		clearByTypeCache();
 	}
 

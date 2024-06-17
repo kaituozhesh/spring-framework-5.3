@@ -4,6 +4,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.testing.aop.AopTestServiceImpl;
 import org.springframework.testing.bean.MyBean;
+import org.springframework.testing.seltEditor.Customer;
 import org.springframework.testing.tag.User;
 
 /**
@@ -18,6 +19,7 @@ public class ClassPathTest {
 //		iocTest();
 //		aopTest();
 		tagTest();
+//		editTest();
 	}
 
 	private static void tagTest() {
@@ -26,6 +28,13 @@ public class ClassPathTest {
 		User dzg = (User) ap.getBean("dzg");
 
 		System.out.println(dzg.getEmail());
+	}
+	private static void editTest() {
+		ApplicationContext ap = new ClassPathXmlApplicationContext("selfEditor.xml");
+		// 从容器中获取 bean
+		Customer bean = ap.getBean(Customer.class);
+
+		System.out.println(bean);
 	}
 
 	public static void iocTest() {

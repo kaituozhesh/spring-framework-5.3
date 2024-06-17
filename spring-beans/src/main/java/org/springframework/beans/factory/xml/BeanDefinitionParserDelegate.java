@@ -411,6 +411,9 @@ public class BeanDefinitionParserDelegate {
 	 */
 	@Nullable
 	public BeanDefinitionHolder parseBeanDefinitionElement(Element ele, @Nullable BeanDefinition containingBean) {
+		/*
+		 * 1. 解析、校验 id和name属性
+		 */
 		String id = ele.getAttribute(ID_ATTRIBUTE);
 		String nameAttr = ele.getAttribute(NAME_ATTRIBUTE);
 
@@ -421,6 +424,7 @@ public class BeanDefinitionParserDelegate {
 		}
 
 		String beanName = id;
+		// 如果没有指定id属性，但定义了name别名属性，则移除别名列表中的第一个值作为beanName
 		if (!StringUtils.hasText(beanName) && !aliases.isEmpty()) {
 			beanName = aliases.remove(0);
 			if (logger.isTraceEnabled()) {
@@ -430,17 +434,30 @@ public class BeanDefinitionParserDelegate {
 		}
 
 		if (containingBean == null) {
+			/*
+			 * 检查当前<bean/>标签的名字和别名是否被所属的<beans/>标签下的其他bean使用了
+			 */
 			checkNameUniqueness(beanName, aliases, ele);
 		}
-
+		/*
+		 * 2. 解析、校验 <bean/>标签的其他属性以及子标签并且统一封装至一个GenericBeanDefinition实例中返回
+		 * 这步完成则创建好了BeanDefinition
+		 */
 		AbstractBeanDefinition beanDefinition = parseBeanDefinitionElement(ele, beanName, containingBean);
+		/*
+		 * 3. 如果返回的beanDefinition不为空，那么继续处理beanName,并将解析出来的BeanDefinition封装到一个BeanDefinitionHolder实例中，最后返回
+		 */
 		if (beanDefinition != null) {
+			// 如果没有设置id或者name属性，那么beanName就是空，此时需要按照Spring规则生成beanName
 			if (!StringUtils.hasText(beanName)) {
 				try {
+					// 如果是内部bean：类的全路径名#当前beanDefinition对象的一致性hash码的16进制表示
 					if (containingBean != null) {
 						beanName = BeanDefinitionReaderUtils.generateBeanName(
 								beanDefinition, this.readerContext.getRegistry(), true);
-					} else {
+					}
+					// 如果是外部bean：类的全路径名#索引（0、1、2......），当有n个没有命名的同类型外部bean，那么名字后面就是从[0, n - 1]类似索引递增的命名。
+					else {
 						beanName = this.readerContext.generateBeanName(beanDefinition);
 						// Register an alias for the plain bean class name, if still possible,
 						// if the generator returned the class name plus a suffix.
@@ -461,6 +478,7 @@ public class BeanDefinitionParserDelegate {
 					return null;
 				}
 			}
+			// 将BeanDefinition、beanName、aliasesArray封装至一个BeanDefinitionHolder对象中返回
 			String[] aliasesArray = StringUtils.toStringArray(aliases);
 			return new BeanDefinitionHolder(beanDefinition, beanName, aliasesArray);
 		}
@@ -497,32 +515,45 @@ public class BeanDefinitionParserDelegate {
 	public AbstractBeanDefinition parseBeanDefinitionElement(
 			Element ele, String beanName, @Nullable BeanDefinition containingBean) {
 
+		// 记录解析过程
 		this.parseState.push(new BeanEntry(beanName));
 
+		// 1. 解析class属性
 		String className = null;
 		if (ele.hasAttribute(CLASS_ATTRIBUTE)) {
 			className = ele.getAttribute(CLASS_ATTRIBUTE).trim();
 		}
+		// 2. 解析parent属性
 		String parent = null;
 		if (ele.hasAttribute(PARENT_ATTRIBUTE)) {
 			parent = ele.getAttribute(PARENT_ATTRIBUTE);
 		}
 
 		try {
+			// 3. 使用给定的className和parentName创建BeanDefinition对象：实际类型为GenericBeanDefinition
 			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
-
+			// 4. <bean/>标签元素的各种属性设置到 bd 中
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
+			// 设置<bean/>标签的描述信息
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
 
+			// 5. 解析<bean/>标签的子标签
+			// 解析<meta/>子标签
 			parseMetaElements(ele, bd);
+			// 解析<lookup-method/>子标签，用于查找方法注入
 			parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
+			// 解析<replaced-method/>子标签，用于任意方法替换
 			parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
 
 			// 构造器解析
+			// 解析<constructor-arg/>子标签，表示一个构造器参数
 			parseConstructorArgElements(ele, bd);
+			// 解析<property/>子标签，表示一个setter方法注入
 			parsePropertyElements(ele, bd);
+			// 解析<qualifier/>子标签，用于自动注入
 			parseQualifierElements(ele, bd);
 
+			// 设置资源和依赖的资源
 			bd.setResource(this.readerContext.getResource());
 			bd.setSource(extractSource(ele));
 

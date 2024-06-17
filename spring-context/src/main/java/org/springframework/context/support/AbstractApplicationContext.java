@@ -296,6 +296,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Create a new AbstractApplicationContext with no parent.
 	 */
 	public AbstractApplicationContext() {
+		// 创建资源模式处理器:用于解析当前系统运行时需要用到的资源（配置文件、xml等）
 		this.resourcePatternResolver = getResourcePatternResolver();
 	}
 
@@ -545,6 +546,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see org.springframework.core.io.support.PathMatchingResourcePatternResolver
 	 */
 	protected ResourcePatternResolver getResourcePatternResolver() {
+		// 将AbstractApplicationContext自身作为ResourceLoader传递给了PathMatchingResourcePatternResolver；
+		// 提供了以classpath开头的Ant路径通配符加载资源获得Resource的方式
+		// 其实就是创建一个资源模式解析器（用来解析XML配置文件）
 		return new PathMatchingResourcePatternResolver(this);
 	}
 
@@ -813,12 +817,15 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		 */
 		beanFactory.setBeanClassLoader(getClassLoader());
 		if (!shouldIgnoreSpel) {
-			// 2. 设置表达式解析器
+			// 2. 设置SPEL表达式的解析器实例StandardBeanExpressionResolver
 			beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
 		}
 		/*
-		 * 3. 添加一个默认属性编辑器注册表，用户后面注册一批常用的PropertyEditor
-		 * PropertyEditor属性编辑器：用于bean的属性注入时的类型自动转换，比如value字符串转换为各种集合。
+		 * 3  添加一个默认属性编辑器注册表实例ResourceEditorRegistrar
+		 * 主要目的是调用其内部的registerCustomEditors方法注册一批常用的PropertyEditor，比如ResourceEditor
+		 *
+		 * PropertyEditor（属性编辑器）用于bean的属性注入时的类型自动转换，比如value字符串转换为各种集合，Resource资源类型等等
+		 * 我们可以实现PropertyEditorSupport接口自定义属性编辑器
 		 */
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
@@ -918,15 +925,21 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	}
 
 	/**
-	 * Instantiate and invoke all registered BeanFactoryPostProcessor beans,
-	 * respecting explicit order if given.
-	 * <p>Must be called before singleton instantiation.
+	 * AbstractApplicationContext的方法
+	 * <p>
+	 * 实例化并调用所有注册的BeanDefinitionRegistryPostProcessor和BeanFactoryPostProcessor
+	 * 具有先后顺序，如果给出显式顺序，则遵守显式顺序。
 	 */
 	protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+		/*
+		 * 调用代理类PostProcessorRegistrationDelegate的静态方法invokeBeanFactoryPostProcessors
+		 * 传入beanFactory 以及 上下文容器中的beanFactoryPostProcessors集合
+		 */
 		PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
 
 		// Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
 		// (e.g. through an @Bean method registered by ConfigurationClassPostProcessor)
+		// 检测LoadTimeWeaver，并为织入做准备
 		if (!NativeDetector.inNativeImage() && beanFactory.getTempClassLoader() == null &&
 				beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
 			beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
@@ -935,9 +948,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	}
 
 	/**
-	 * Instantiate and register all BeanPostProcessor beans,
-	 * respecting explicit order if given.
-	 * <p>Must be called before any instantiation of application beans.
+	 * AbstractApplicationContext的方法
+	 * <p>
+	 * 实例化和注册所有的BeanPostProcessor，如果给出显式顺序，则按照顺序注册。
+	 * 必须在任何应用程序 bean 实例化之前调用
 	 */
 	protected void registerBeanPostProcessors(ConfigurableListableBeanFactory beanFactory) {
 		PostProcessorRegistrationDelegate.registerBeanPostProcessors(beanFactory, this);

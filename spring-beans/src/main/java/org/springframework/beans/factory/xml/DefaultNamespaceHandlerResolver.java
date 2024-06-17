@@ -115,32 +115,44 @@ public class DefaultNamespaceHandlerResolver implements NamespaceHandlerResolver
 	@Override
 	@Nullable
 	public NamespaceHandler resolve(String namespaceUri) {
+		/*
+		 * 1 获取全部handlerMappings集合
+		 * handlerMappings在使用时才会被加载，懒加载，刚加载进来（第一次解析）时的样式为：
+		 * http://www.springframework.org/schema/p -> org.springframework.beans.factory.xml.SimplePropertyNamespaceHandler
+		 * key和value都是字符串，key为namespaceUri字符串，value就是对应的NamespaceHandler的全路径类名字符串
+		 */
 		Map<String, Object> handlerMappings = getHandlerMappings();
+		// 然后根据给定的namespaceUri获取handlerOrClassName
 		Object handlerOrClassName = handlerMappings.get(namespaceUri);
+		// 如果没有获取到，直接返回null
 		if (handlerOrClassName == null) {
 			return null;
 		}
+		// 如果获取value已经是NamespaceHandler对象则直接返回
 		else if (handlerOrClassName instanceof NamespaceHandler) {
 			return (NamespaceHandler) handlerOrClassName;
 		}
+		// 进行第一次解析
 		else {
 			String className = (String) handlerOrClassName;
 			try {
+				// 获取class对象
 				Class<?> handlerClass = ClassUtils.forName(className, this.classLoader);
 				if (!NamespaceHandler.class.isAssignableFrom(handlerClass)) {
 					throw new FatalBeanException("Class [" + className + "] for namespace [" + namespaceUri +
 							"] does not implement the [" + NamespaceHandler.class.getName() + "] interface");
 				}
+				// 实例化NamespaceHandler对象
 				NamespaceHandler namespaceHandler = (NamespaceHandler) BeanUtils.instantiateClass(handlerClass);
+				// 初始化NamespaceHandler对象，为当前命名空间下的不同标签节点指定不同的解析器
 				namespaceHandler.init();
+				// 重新存入该namespaceUri，将handlerOrClassName，即全路径类名，替换为namespaceHandler，即解析后的对象，避免后续再次解析
 				handlerMappings.put(namespaceUri, namespaceHandler);
 				return namespaceHandler;
-			}
-			catch (ClassNotFoundException ex) {
+			} catch (ClassNotFoundException ex) {
 				throw new FatalBeanException("Could not find NamespaceHandler class [" + className +
 						"] for namespace [" + namespaceUri + "]", ex);
-			}
-			catch (LinkageError err) {
+			} catch (LinkageError err) {
 				throw new FatalBeanException("Unresolvable class definition for NamespaceHandler class [" +
 						className + "] for namespace [" + namespaceUri + "]", err);
 			}
